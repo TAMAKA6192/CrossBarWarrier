@@ -31,10 +31,14 @@ enum class CellState {
     EMPTY,
     RED_DOT,
     GREEN_DOT,
-    RED_LINE,
-    GREEN_LINE,
-    RED_DOT_RED_LINE,
-    GREEN_DOT_GREEN_LINE
+    RED_LINE_VERTICAL,
+    RED_LINE_HORIZONTAL,
+    GREEN_LINE_VERTICAL,
+    GREEN_LINE_HORIZONTAL,
+    RED_DOT_RED_LINE_VERTICAL,
+    RED_DOT_RED_LINE_HORIZONTAL,
+    GREEN_DOT_GREEN_LINE_VERTICAL,
+    GREEN_DOT_GREEN_LINE_HORIZONTAL
 };
 
 struct GameState {
@@ -376,7 +380,8 @@ void DrawBoard(HDC hdc, HWND hWnd)
             CellState state = g_game.grid[row][col];
             
             // 点を描画
-            if (state == CellState::RED_DOT || state == CellState::RED_DOT_RED_LINE)
+            if (state == CellState::RED_DOT || state == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                state == CellState::RED_DOT_RED_LINE_HORIZONTAL)
             {
                 HBRUSH redBrush = CreateSolidBrush(RGB(255, 0, 0));
                 HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, redBrush);
@@ -384,7 +389,8 @@ void DrawBoard(HDC hdc, HWND hWnd)
                 SelectObject(hdc, oldBrush);
                 DeleteObject(redBrush);
             }
-            else if (state == CellState::GREEN_DOT || state == CellState::GREEN_DOT_GREEN_LINE)
+            else if (state == CellState::GREEN_DOT || state == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                     state == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL)
             {
                 HBRUSH greenBrush = CreateSolidBrush(RGB(0, 255, 0));
                 HBRUSH oldBrush = (HBRUSH)SelectObject(hdc, greenBrush);
@@ -394,13 +400,15 @@ void DrawBoard(HDC hdc, HWND hWnd)
             }
             
             // 線を描画
-            if (state == CellState::RED_LINE || state == CellState::RED_DOT_RED_LINE)
+            if (state == CellState::RED_LINE_VERTICAL || state == CellState::RED_DOT_RED_LINE_VERTICAL)
             {
-                // 上の赤い点から下の赤い点まで線を引く
+                // 縦線（上下）
                 bool hasRedAbove = (row > 0 && (g_game.grid[row - 1][col] == CellState::RED_DOT || 
-                                                g_game.grid[row - 1][col] == CellState::RED_DOT_RED_LINE));
+                                                g_game.grid[row - 1][col] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                                                g_game.grid[row - 1][col] == CellState::RED_DOT_RED_LINE_HORIZONTAL));
                 bool hasRedBelow = (row < g_game.gridSize - 1 && (g_game.grid[row + 1][col] == CellState::RED_DOT || 
-                                                                   g_game.grid[row + 1][col] == CellState::RED_DOT_RED_LINE));
+                                                                   g_game.grid[row + 1][col] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                                                                   g_game.grid[row + 1][col] == CellState::RED_DOT_RED_LINE_HORIZONTAL));
                 if (hasRedAbove && hasRedBelow)
                 {
                     HPEN redPen = CreatePen(PS_SOLID, 3, RGB(255, 0, 0));
@@ -413,13 +421,57 @@ void DrawBoard(HDC hdc, HWND hWnd)
                     DeleteObject(redPen);
                 }
             }
-            else if (state == CellState::GREEN_LINE || state == CellState::GREEN_DOT_GREEN_LINE)
+            else if (state == CellState::RED_LINE_HORIZONTAL || state == CellState::RED_DOT_RED_LINE_HORIZONTAL)
             {
-                // 左の緑の点から右の緑の点まで線を引く
+                // 横線（左右）
+                bool hasRedLeft = (col > 0 && (g_game.grid[row][col - 1] == CellState::RED_DOT || 
+                                               g_game.grid[row][col - 1] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                                               g_game.grid[row][col - 1] == CellState::RED_DOT_RED_LINE_HORIZONTAL));
+                bool hasRedRight = (col < g_game.gridSize - 1 && (g_game.grid[row][col + 1] == CellState::RED_DOT || 
+                                                                   g_game.grid[row][col + 1] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                                                                   g_game.grid[row][col + 1] == CellState::RED_DOT_RED_LINE_HORIZONTAL));
+                if (hasRedLeft && hasRedRight)
+                {
+                    HPEN redPen = CreatePen(PS_SOLID, 3, RGB(255, 0, 0));
+                    HPEN oldPen = (HPEN)SelectObject(hdc, redPen);
+                    int leftX = x - g_game.cellSize / 2;
+                    int rightX = x + g_game.cellSize + g_game.cellSize / 2;
+                    MoveToEx(hdc, leftX, centerY, NULL);
+                    LineTo(hdc, rightX, centerY);
+                    SelectObject(hdc, oldPen);
+                    DeleteObject(redPen);
+                }
+            }
+            else if (state == CellState::GREEN_LINE_VERTICAL || state == CellState::GREEN_DOT_GREEN_LINE_VERTICAL)
+            {
+                // 縦線（上下）
+                bool hasGreenAbove = (row > 0 && (g_game.grid[row - 1][col] == CellState::GREEN_DOT || 
+                                                  g_game.grid[row - 1][col] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                                                  g_game.grid[row - 1][col] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL));
+                bool hasGreenBelow = (row < g_game.gridSize - 1 && (g_game.grid[row + 1][col] == CellState::GREEN_DOT || 
+                                                                     g_game.grid[row + 1][col] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                                                                     g_game.grid[row + 1][col] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL));
+                if (hasGreenAbove && hasGreenBelow)
+                {
+                    HPEN greenPen = CreatePen(PS_SOLID, 3, RGB(0, 255, 0));
+                    HPEN oldPen = (HPEN)SelectObject(hdc, greenPen);
+                    int topY = y - g_game.cellSize / 2;
+                    int bottomY = y + g_game.cellSize + g_game.cellSize / 2;
+                    MoveToEx(hdc, centerX, topY, NULL);
+                    LineTo(hdc, centerX, bottomY);
+                    SelectObject(hdc, oldPen);
+                    DeleteObject(greenPen);
+                }
+            }
+            else if (state == CellState::GREEN_LINE_HORIZONTAL || state == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL)
+            {
+                // 横線（左右）
                 bool hasGreenLeft = (col > 0 && (g_game.grid[row][col - 1] == CellState::GREEN_DOT || 
-                                                 g_game.grid[row][col - 1] == CellState::GREEN_DOT_GREEN_LINE));
+                                                 g_game.grid[row][col - 1] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                                                 g_game.grid[row][col - 1] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL));
                 bool hasGreenRight = (col < g_game.gridSize - 1 && (g_game.grid[row][col + 1] == CellState::GREEN_DOT || 
-                                                                     g_game.grid[row][col + 1] == CellState::GREEN_DOT_GREEN_LINE));
+                                                                     g_game.grid[row][col + 1] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                                                                     g_game.grid[row][col + 1] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL));
                 if (hasGreenLeft && hasGreenRight)
                 {
                     HPEN greenPen = CreatePen(PS_SOLID, 3, RGB(0, 255, 0));
@@ -446,23 +498,41 @@ bool CheckValidClick(int row, int col)
     
     if (g_game.isPlayer1Turn)
     {
-        // 先手：上下に赤い点があるか
+        // 先手：上下に赤い点があるか、または左右に赤い点があるか
         bool hasRedAbove = (row > 0 && (g_game.grid[row - 1][col] == CellState::RED_DOT || 
-                                        g_game.grid[row - 1][col] == CellState::RED_DOT_RED_LINE));
+                                        g_game.grid[row - 1][col] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                                        g_game.grid[row - 1][col] == CellState::RED_DOT_RED_LINE_HORIZONTAL));
         bool hasRedBelow = (row < g_game.gridSize - 1 && 
                            (g_game.grid[row + 1][col] == CellState::RED_DOT || 
-                            g_game.grid[row + 1][col] == CellState::RED_DOT_RED_LINE));
-        return hasRedAbove && hasRedBelow;
+                            g_game.grid[row + 1][col] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                            g_game.grid[row + 1][col] == CellState::RED_DOT_RED_LINE_HORIZONTAL));
+        bool hasRedLeft = (col > 0 && (g_game.grid[row][col - 1] == CellState::RED_DOT || 
+                                       g_game.grid[row][col - 1] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                                       g_game.grid[row][col - 1] == CellState::RED_DOT_RED_LINE_HORIZONTAL));
+        bool hasRedRight = (col < g_game.gridSize - 1 && 
+                           (g_game.grid[row][col + 1] == CellState::RED_DOT || 
+                            g_game.grid[row][col + 1] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                            g_game.grid[row][col + 1] == CellState::RED_DOT_RED_LINE_HORIZONTAL));
+        return (hasRedAbove && hasRedBelow) || (hasRedLeft && hasRedRight);
     }
     else
     {
-        // 後手：左右に緑の点があるか
+        // 後手：上下に緑の点があるか、または左右に緑の点があるか
+        bool hasGreenAbove = (row > 0 && (g_game.grid[row - 1][col] == CellState::GREEN_DOT || 
+                                          g_game.grid[row - 1][col] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                                          g_game.grid[row - 1][col] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL));
+        bool hasGreenBelow = (row < g_game.gridSize - 1 && 
+                             (g_game.grid[row + 1][col] == CellState::GREEN_DOT || 
+                              g_game.grid[row + 1][col] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                              g_game.grid[row + 1][col] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL));
         bool hasGreenLeft = (col > 0 && (g_game.grid[row][col - 1] == CellState::GREEN_DOT || 
-                                         g_game.grid[row][col - 1] == CellState::GREEN_DOT_GREEN_LINE));
+                                         g_game.grid[row][col - 1] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                                         g_game.grid[row][col - 1] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL));
         bool hasGreenRight = (col < g_game.gridSize - 1 && 
                              (g_game.grid[row][col + 1] == CellState::GREEN_DOT || 
-                              g_game.grid[row][col + 1] == CellState::GREEN_DOT_GREEN_LINE));
-        return hasGreenLeft && hasGreenRight;
+                              g_game.grid[row][col + 1] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                              g_game.grid[row][col + 1] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL));
+        return (hasGreenAbove && hasGreenBelow) || (hasGreenLeft && hasGreenRight);
     }
 }
 
@@ -470,11 +540,43 @@ void PlaceLine(int row, int col)
 {
     if (g_game.isPlayer1Turn)
     {
-        g_game.grid[row][col] = CellState::RED_LINE;
+        // 上下に赤い点があるか確認
+        bool hasRedAbove = (row > 0 && (g_game.grid[row - 1][col] == CellState::RED_DOT || 
+                                        g_game.grid[row - 1][col] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                                        g_game.grid[row - 1][col] == CellState::RED_DOT_RED_LINE_HORIZONTAL));
+        bool hasRedBelow = (row < g_game.gridSize - 1 && 
+                           (g_game.grid[row + 1][col] == CellState::RED_DOT || 
+                            g_game.grid[row + 1][col] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                            g_game.grid[row + 1][col] == CellState::RED_DOT_RED_LINE_HORIZONTAL));
+        
+        if (hasRedAbove && hasRedBelow)
+        {
+            g_game.grid[row][col] = CellState::RED_LINE_VERTICAL;
+        }
+        else
+        {
+            g_game.grid[row][col] = CellState::RED_LINE_HORIZONTAL;
+        }
     }
     else
     {
-        g_game.grid[row][col] = CellState::GREEN_LINE;
+        // 上下に緑の点があるか確認
+        bool hasGreenAbove = (row > 0 && (g_game.grid[row - 1][col] == CellState::GREEN_DOT || 
+                                          g_game.grid[row - 1][col] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                                          g_game.grid[row - 1][col] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL));
+        bool hasGreenBelow = (row < g_game.gridSize - 1 && 
+                             (g_game.grid[row + 1][col] == CellState::GREEN_DOT || 
+                              g_game.grid[row + 1][col] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                              g_game.grid[row + 1][col] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL));
+        
+        if (hasGreenAbove && hasGreenBelow)
+        {
+            g_game.grid[row][col] = CellState::GREEN_LINE_VERTICAL;
+        }
+        else
+        {
+            g_game.grid[row][col] = CellState::GREEN_LINE_HORIZONTAL;
+        }
     }
 }
 
@@ -486,18 +588,35 @@ bool DFSRed(int row, int col, std::vector<std::vector<bool>>& visited)
         return false;
     
     CellState state = g_game.grid[row][col];
-    if (state != CellState::RED_DOT && state != CellState::RED_LINE && 
-        state != CellState::RED_DOT_RED_LINE)
+    if (state != CellState::RED_DOT && 
+        state != CellState::RED_LINE_VERTICAL && 
+        state != CellState::RED_LINE_HORIZONTAL &&
+        state != CellState::RED_DOT_RED_LINE_VERTICAL &&
+        state != CellState::RED_DOT_RED_LINE_HORIZONTAL)
         return false;
     
     visited[row][col] = true;
     
     if (row == g_game.gridSize - 1 && (state == CellState::RED_DOT || 
-                                       state == CellState::RED_DOT_RED_LINE))
+                                       state == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                                       state == CellState::RED_DOT_RED_LINE_HORIZONTAL))
         return true;
     
-    if (DFSRed(row + 1, col, visited)) return true;
-    if (DFSRed(row - 1, col, visited)) return true;
+    // 縦線の場合のみ上下に移動可能
+    if (state == CellState::RED_LINE_VERTICAL || state == CellState::RED_DOT_RED_LINE_VERTICAL ||
+        state == CellState::RED_DOT)
+    {
+        if (DFSRed(row + 1, col, visited)) return true;
+        if (DFSRed(row - 1, col, visited)) return true;
+    }
+    
+    // 横線の場合のみ左右に移動可能
+    if (state == CellState::RED_LINE_HORIZONTAL || state == CellState::RED_DOT_RED_LINE_HORIZONTAL ||
+        state == CellState::RED_DOT)
+    {
+        if (DFSRed(row, col + 1, visited)) return true;
+        if (DFSRed(row, col - 1, visited)) return true;
+    }
     
     return false;
 }
@@ -510,18 +629,35 @@ bool DFSGreen(int row, int col, std::vector<std::vector<bool>>& visited)
         return false;
     
     CellState state = g_game.grid[row][col];
-    if (state != CellState::GREEN_DOT && state != CellState::GREEN_LINE && 
-        state != CellState::GREEN_DOT_GREEN_LINE)
+    if (state != CellState::GREEN_DOT && 
+        state != CellState::GREEN_LINE_VERTICAL && 
+        state != CellState::GREEN_LINE_HORIZONTAL &&
+        state != CellState::GREEN_DOT_GREEN_LINE_VERTICAL &&
+        state != CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL)
         return false;
     
     visited[row][col] = true;
     
     if (col == g_game.gridSize - 1 && (state == CellState::GREEN_DOT || 
-                                       state == CellState::GREEN_DOT_GREEN_LINE))
+                                       state == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                                       state == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL))
         return true;
     
-    if (DFSGreen(row, col + 1, visited)) return true;
-    if (DFSGreen(row, col - 1, visited)) return true;
+    // 横線の場合のみ左右に移動可能
+    if (state == CellState::GREEN_LINE_HORIZONTAL || state == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL ||
+        state == CellState::GREEN_DOT)
+    {
+        if (DFSGreen(row, col + 1, visited)) return true;
+        if (DFSGreen(row, col - 1, visited)) return true;
+    }
+    
+    // 縦線の場合のみ上下に移動可能
+    if (state == CellState::GREEN_LINE_VERTICAL || state == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+        state == CellState::GREEN_DOT)
+    {
+        if (DFSGreen(row + 1, col, visited)) return true;
+        if (DFSGreen(row - 1, col, visited)) return true;
+    }
     
     return false;
 }
@@ -536,7 +672,8 @@ bool CheckWin()
         for (int col = 0; col < g_game.gridSize; col++)
         {
             if ((g_game.grid[0][col] == CellState::RED_DOT || 
-                 g_game.grid[0][col] == CellState::RED_DOT_RED_LINE) && DFSRed(0, col, visited))
+                 g_game.grid[0][col] == CellState::RED_DOT_RED_LINE_VERTICAL ||
+                 g_game.grid[0][col] == CellState::RED_DOT_RED_LINE_HORIZONTAL) && DFSRed(0, col, visited))
                 return true;
         }
     }
@@ -548,7 +685,8 @@ bool CheckWin()
         for (int row = 0; row < g_game.gridSize; row++)
         {
             if ((g_game.grid[row][0] == CellState::GREEN_DOT || 
-                 g_game.grid[row][0] == CellState::GREEN_DOT_GREEN_LINE) && DFSGreen(row, 0, visited))
+                 g_game.grid[row][0] == CellState::GREEN_DOT_GREEN_LINE_VERTICAL ||
+                 g_game.grid[row][0] == CellState::GREEN_DOT_GREEN_LINE_HORIZONTAL) && DFSGreen(row, 0, visited))
                 return true;
         }
     }
