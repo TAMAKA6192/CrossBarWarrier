@@ -355,7 +355,7 @@ void InitializeGame(int level)
 
 void DrawBoard(HDC hdc, HWND hWnd)
 {
-    if (!g_game.isPlaying || g_game.grid.empty())
+    if (g_game.grid.empty())
         return;
     
     RECT clientRect;
@@ -396,26 +396,38 @@ void DrawBoard(HDC hdc, HWND hWnd)
             // 線を描画
             if (state == CellState::RED_LINE || state == CellState::RED_DOT_RED_LINE)
             {
-                if (row > 0 && (g_game.grid[row - 1][col] == CellState::RED_DOT || 
-                                g_game.grid[row - 1][col] == CellState::RED_DOT_RED_LINE))
+                // 上の赤い点から下の赤い点まで線を引く
+                bool hasRedAbove = (row > 0 && (g_game.grid[row - 1][col] == CellState::RED_DOT || 
+                                                g_game.grid[row - 1][col] == CellState::RED_DOT_RED_LINE));
+                bool hasRedBelow = (row < g_game.gridSize - 1 && (g_game.grid[row + 1][col] == CellState::RED_DOT || 
+                                                                   g_game.grid[row + 1][col] == CellState::RED_DOT_RED_LINE));
+                if (hasRedAbove && hasRedBelow)
                 {
                     HPEN redPen = CreatePen(PS_SOLID, 3, RGB(255, 0, 0));
                     HPEN oldPen = (HPEN)SelectObject(hdc, redPen);
-                    MoveToEx(hdc, centerX, centerY, NULL);
-                    LineTo(hdc, centerX, y - g_game.cellSize / 2);
+                    int topY = y - g_game.cellSize / 2;
+                    int bottomY = y + g_game.cellSize + g_game.cellSize / 2;
+                    MoveToEx(hdc, centerX, topY, NULL);
+                    LineTo(hdc, centerX, bottomY);
                     SelectObject(hdc, oldPen);
                     DeleteObject(redPen);
                 }
             }
             else if (state == CellState::GREEN_LINE || state == CellState::GREEN_DOT_GREEN_LINE)
             {
-                if (col > 0 && (g_game.grid[row][col - 1] == CellState::GREEN_DOT || 
-                                g_game.grid[row][col - 1] == CellState::GREEN_DOT_GREEN_LINE))
+                // 左の緑の点から右の緑の点まで線を引く
+                bool hasGreenLeft = (col > 0 && (g_game.grid[row][col - 1] == CellState::GREEN_DOT || 
+                                                 g_game.grid[row][col - 1] == CellState::GREEN_DOT_GREEN_LINE));
+                bool hasGreenRight = (col < g_game.gridSize - 1 && (g_game.grid[row][col + 1] == CellState::GREEN_DOT || 
+                                                                     g_game.grid[row][col + 1] == CellState::GREEN_DOT_GREEN_LINE));
+                if (hasGreenLeft && hasGreenRight)
                 {
                     HPEN greenPen = CreatePen(PS_SOLID, 3, RGB(0, 255, 0));
                     HPEN oldPen = (HPEN)SelectObject(hdc, greenPen);
-                    MoveToEx(hdc, centerX, centerY, NULL);
-                    LineTo(hdc, x - g_game.cellSize / 2, centerY);
+                    int leftX = x - g_game.cellSize / 2;
+                    int rightX = x + g_game.cellSize + g_game.cellSize / 2;
+                    MoveToEx(hdc, leftX, centerY, NULL);
+                    LineTo(hdc, rightX, centerY);
                     SelectObject(hdc, oldPen);
                     DeleteObject(greenPen);
                 }
