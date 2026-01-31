@@ -16,6 +16,15 @@
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1
 #endif
+
+// ゲームコントロールID
+#define IDC_BTN_START           1001
+#define IDC_RADIO_PLAYER1       1002
+#define IDC_RADIO_PLAYER2       1003
+#define IDC_EDIT_STATUS         1004
+#define IDC_SPINNER             1005
+#define IDC_SPINNER_BUDDY       1006
+
 // 新しいオブジェクトの次の既定値
 //
 #ifdef APSTUDIO_INVOKED
